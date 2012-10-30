@@ -2,6 +2,7 @@
 import socket
 import re
 from os import system
+from threading import Thread
 
 class Operadores:
 
@@ -26,47 +27,60 @@ class Operadores:
 				parcial -= 1	
 			return a
 
-class Servidor:
+class Servidor(Thread):
+
+	def __init__(self, argvs, host, op):
+		Thread.__init__(self)
+		self.argvs = argvs
+		self.host = host
+		self.op = op
 
 	def recv(self):
-		s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		s.bind(('localhost', 8888))
 
-		dados, dados_cli = s.recvfrom(1024) 
-				
-		argvs = []
-		argvs = dados.split()
-		op = Operadores()
 
-		if argvs[1] == '!':
-			msg = op.fatorial(int(argvs[0]))
+		if self.argvs[1] == '!':
+			msg = self.op.fatorial(int(self.argvs[0]))
 			retorno = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-			retorno.sendto(str(msg), ('localhost', 8889))
+			retorno.sendto(str(msg), (self.host[0], 8889))
 			retorno.close()
 		else:	
-			if argvs[1] == '+':
-				msg = op.soma(int(argvs[0]), int(argvs[2]))
+			if self.argvs[1] == '+':
+				msg = self.op.soma(int(self.argvs[0]), int(self.argvs[2]))
 				retorno = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-				retorno.sendto(str(msg), ('localhost', 8889))
+				retorno.sendto(str(msg), (self.host[0], 8889))
 				retorno.close()
 			else:
-				if argvs[1] == '*':
-					msg = op.produto(int(argvs[0]), int(argvs[2]))
+				if self.argvs[1] == '*':
+					msg = self.op.produto(int(self.argvs[0]), int(self.argvs[2]))
 					retorno = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-					retorno.sendto(str(msg), ('localhost', 8889))
+					retorno.sendto(str(msg), (self.host[0], 8889))
 					retorno.close()
-				else:
-					print('\n\nCliente encerrou a conexão!')
-					quit()
 		s.close()
+		
+	def run():
+		recv(self)
 
 		
 system('clear')
+ipServidor = "10.0.0.2"
+listaThread = []
+
 while True:
 	print('Servidor da classe Operações')
 	print('aguardando solicitação...')
-	s = Servidor()
-	s.recv()
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	s.bind((ipServidor, 8888))
+	dados, host = s.recvfrom(8889) 
+	print 'Operação a ser realizada:', dados
+	print 'Cliente: ', host
+	argvs = []
+	argvs = dados.split()
+	op = Operadores()
+	temp = Servidor(argvs, host, op)
+	listaThread.append(temp)
+	temp.recv()
+	temp.start()
+	s.close()
 	print('\nOperação realizada com sucesso! \n\n')
 	
 
